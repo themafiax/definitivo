@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'menu_principal_screen.dart';
 
 class ConfigurarAreasScreen extends StatefulWidget {
-  final Function(List<String>, Map<String, List<String>>) actualizarAreasYRetos;
+  final Function(List<String>, Map<String, List<String>>, Map<String, int>) actualizarAreasYRetos;
 
   const ConfigurarAreasScreen({Key? key, required this.actualizarAreasYRetos}) : super(key: key);
 
@@ -14,9 +14,9 @@ class ConfigurarAreasScreen extends StatefulWidget {
 class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
   List<String> _areasSeleccionadas = [];
   Map<String, List<String>> _retosSeleccionados = {};
-  Map<String, List<bool>> _retosMarcados = {};
+  Map<String, bool> _retosMarcados = {};
 
-  final Map<String, List<String>> _areasPorDefecto = {
+  final Map<String, List<String>> _retosPorArea = {
     "Salud Física 🏋️‍♂️": [
       "Hacer 10-20 minutos de ejercicio",
       "Beber al menos 8 vasos de agua",
@@ -51,7 +51,47 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
       "Dedicar 30 minutos a un hobby",
       "Probar algo nuevo",
       "Pasar 1 hora sin redes sociales"
-    ]
+    ],
+  };
+
+  final Map<String, int> _xpPorReto = {
+    "Salud Física 🏋️‍♂️": 5,
+    "Desarrollo Personal 📖": 4,
+    "Finanzas 💰": 3,
+    "Relaciones 👨‍👩‍👧‍👦": 4,
+    "Trabajo y Productividad 💼": 5,
+    "Espiritualidad y Mindfulness 🧘‍♂️": 4,
+    "Ocio y Diversión 🎨": 3,
+  };
+
+  final Map<String, int> _vidaGanadaPorReto = {
+    "Salud Física 🏋️‍♂️": 10,
+    "Desarrollo Personal 📖": 8,
+    "Finanzas 💰": 5,
+    "Relaciones 👨‍👩‍👧‍👦": 8,
+    "Trabajo y Productividad 💼": 10,
+    "Espiritualidad y Mindfulness 🧘‍♂️": 8,
+    "Ocio y Diversión 🎨": 5,
+  };
+
+  final Map<String, int> _vidaPerdidaPorReto = {
+    "Salud Física 🏋️‍♂️": 15,
+    "Desarrollo Personal 📖": 12,
+    "Finanzas 💰": 10,
+    "Relaciones 👨‍👩‍👧‍👦": 12,
+    "Trabajo y Productividad 💼": 15,
+    "Espiritualidad y Mindfulness 🧘‍♂️": 10,
+    "Ocio y Diversión 🎨": 8,
+  };
+
+  final Map<String, int> _pavosPorReto = {
+    "Salud Física 🏋️‍♂️": 5,
+    "Desarrollo Personal 📖": 4,
+    "Finanzas 💰": 3,
+    "Relaciones 👨‍👩‍👧‍👦": 4,
+    "Trabajo y Productividad 💼": 5,
+    "Espiritualidad y Mindfulness 🧘‍♂️": 4,
+    "Ocio y Diversión 🎨": 3,
   };
 
   @override
@@ -62,49 +102,30 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
 
   Future<void> _cargarDatosGuardados() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String>? areasGuardadas = prefs.getStringList('areasSeleccionadas');
-
-    if (areasGuardadas == null || areasGuardadas.isEmpty) {
-      _areasSeleccionadas = _areasPorDefecto.keys.toList();
-      _retosSeleccionados = Map.from(_areasPorDefecto);
-    } else {
-      _areasSeleccionadas = areasGuardadas;
+    setState(() {
+      _areasSeleccionadas = _retosPorArea.keys.toList();
       _retosSeleccionados = {};
       for (String area in _areasSeleccionadas) {
-        _retosSeleccionados[area] = prefs.getStringList(area) ?? [];
+        _retosSeleccionados[area] = _retosPorArea[area] ?? [];
       }
-    }
-
-    _retosMarcados = {
-      for (var area in _areasSeleccionadas)
-        area: List.filled(_retosSeleccionados[area]?.length ?? 0, false)
-    };
-
-    setState(() {});
+    });
   }
 
   void _guardarDatos() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setStringList('areasSeleccionadas', _areasSeleccionadas);
 
-    _retosSeleccionados.forEach((area, retos) {
-      prefs.setStringList(area, retos);
-    });
+    widget.actualizarAreasYRetos(_areasSeleccionadas, _retosSeleccionados, {});
 
-    widget.actualizarAreasYRetos(_areasSeleccionadas, _retosSeleccionados);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("¡Áreas y retos guardados correctamente!")),
-    );
-
-    Navigator.of(context).pushAndRemoveUntil(
+    Navigator.push(
+      context,
       MaterialPageRoute(
         builder: (context) => MenuPrincipalScreen(
           retosSeleccionados: _retosSeleccionados,
           areasDeVida: _areasSeleccionadas,
+          nivelesAreas: {},
         ),
       ),
-          (Route<dynamic> route) => false,
     );
   }
 
@@ -124,24 +145,20 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
                   return Card(
                     margin: EdgeInsets.symmetric(vertical: 5),
                     child: ExpansionTile(
-                      title: Text(area, style: TextStyle(fontWeight: FontWeight.bold)),
-                      children: _retosSeleccionados[area]!.asMap().entries.map((entry) {
-                        int retoIndex = entry.key;
-                        String reto = entry.value;
-                        return Row(
-                          children: [
-                            Checkbox(
-                              value: _retosMarcados[area]?[retoIndex] ?? false,
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  _retosMarcados[area]?[retoIndex] = value ?? false;
-                                });
-                              },
-                            ),
-                            Expanded(
-                              child: Text(reto),
-                            ),
-                          ],
+                      title: Text(area, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      children: _retosSeleccionados[area]!.map((reto) {
+                        return CheckboxListTile(
+                          title: Text(reto),
+                          subtitle: Text(
+                            "+${_xpPorReto[area] ?? 0} XP, +${_vidaGanadaPorReto[area] ?? 0} Vida, -${_vidaPerdidaPorReto[area] ?? 0} Vida, +${_pavosPorReto[area] ?? 0} Pavos",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          value: _retosMarcados[reto] ?? false,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              _retosMarcados[reto] = value ?? false;
+                            });
+                          },
                         );
                       }).toList(),
                     ),

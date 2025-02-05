@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:fluttermoji/fluttermojiCircleAvatar.dart';
 import 'package:fluttermoji/fluttermojiCustomizer.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'menu_principal_screen.dart';
+import 'package:fluttermoji/fluttermojiSaveWidget.dart';
+import 'package:get/get.dart';
+import 'package:fluttermoji/fluttermojiController.dart';
+import 'configurar_areas_screen.dart';
 
 class PersonalizacionAvatarScreen extends StatefulWidget {
-  final List<String> areasDeVida; // ✅ Se requiere este parámetro
+  final List<String> areasDeVida;
 
   const PersonalizacionAvatarScreen({Key? key, required this.areasDeVida}) : super(key: key);
 
@@ -14,89 +15,47 @@ class PersonalizacionAvatarScreen extends StatefulWidget {
 }
 
 class _PersonalizacionAvatarScreenState extends State<PersonalizacionAvatarScreen> {
-  bool _showCustomizer = false;
-
-  Future<void> _guardarAvatar() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('avatar', 'customizado');
+  @override
+  void initState() {
+    super.initState();
+    if (!Get.isRegistered<FluttermojiController>()) {
+      Get.put(FluttermojiController()); // 🔥 Inicializa el controlador solo si no está registrado
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Personaliza tu Avatar")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!_showCustomizer)
-              Column(
-                children: [
-                  FluttermojiCircleAvatar(
-                    backgroundColor: Colors.grey[200],
-                    radius: 80,
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _showCustomizer = true;
-                      });
-                    },
-                    child: Text("Personalizar Avatar"),
-                  ),
-                ],
-              )
-            else
-              Expanded(
-                child: Column(
-                  children: [
-                    Expanded(child: FluttermojiCustomizer()),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () async {
-                        await _guardarAvatar();
-                        setState(() {
-                          _showCustomizer = false;
-                        });
-                      },
-                      child: Text("Guardar y Volver"),
-                    ),
-                    SizedBox(height: 20),
-                  ],
-                ),
-              ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: FluttermojiCustomizer(), // 🔥 Eliminando el parámetro 'controller'
+          ),
 
-            if (!_showCustomizer) SizedBox(height: 40),
+          SizedBox(height: 20),
 
-            if (!_showCustomizer)
-              Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/configurarAreas');
-                    },
-                    child: Text("Guardar y Continuar"),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => MenuPrincipalScreen(
-                            retosSeleccionados: {},
-                            areasDeVida: widget.areasDeVida, // ✅ Se pasa correctamente
-                          ),
-                        ),
-                            (Route<dynamic> route) => false,
-                      );
-                    },
-                    child: Text("Menú Principal"),
-                  ),
-                ],
+          FluttermojiSaveWidget(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ConfigurarAreasScreen(
+                  actualizarAreasYRetos: (nuevasAreas, nuevosRetos, nuevosNiveles) {},
+                )),
+              );
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              child: Text(
+                "Guardar y Continuar",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-          ],
-        ),
+            ),
+          ),
+
+          SizedBox(height: 20),
+        ],
       ),
     );
   }

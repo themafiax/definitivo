@@ -29,6 +29,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   List<String> _areasDeVida = [];
   Map<String, List<String>> _retosSeleccionados = {};
+  Map<String, int> _nivelesAreas = {}; // ✅ Nuevo: Se agregan los niveles de áreas
   int _vida = 500;
   bool _cargando = true;
   bool _primeraVez = true;
@@ -53,10 +54,11 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void actualizarAreasYRetos(List<String> nuevasAreas, Map<String, List<String>> nuevosRetos) {
+  void actualizarAreasYRetos(List<String> nuevasAreas, Map<String, List<String>> nuevosRetos, Map<String, int> nuevosNiveles) {
     setState(() {
       _areasDeVida = nuevasAreas;
       _retosSeleccionados = nuevosRetos;
+      _nivelesAreas = nuevosNiveles;
     });
   }
 
@@ -77,12 +79,13 @@ class _MyAppState extends State<MyApp> {
       home: _primeraVez
           ? IntroduccionScreen()
           : MenuPrincipalScreen(
-        retosSeleccionados: _retosSeleccionados, // ✅ Ahora usa los retos seleccionados correctamente
-        areasDeVida: _areasDeVida, // ✅ Se mantiene la selección de áreas
+        retosSeleccionados: _retosSeleccionados,
+        areasDeVida: _areasDeVida,
+        nivelesAreas: _nivelesAreas, // ✅ Se pasa correctamente a la pantalla 7
       ),
       routes: {
         '/personalizacion': (context) => PersonalizacionAvatarScreen(areasDeVida: _areasDeVida),
-        '/configurarAreas': (context) => ConfigurarAreasScreen(actualizarAreasYRetos: actualizarAreasYRetos), // ✅ Se pasa la función correcta
+        '/configurarAreas': (context) => ConfigurarAreasScreen(actualizarAreasYRetos: actualizarAreasYRetos),
         '/explicacionPavos': (context) => ExplicacionPavosScreen(),
         '/tienda': (context) => TiendaMalosHabitosScreen(areasDeVida: _areasDeVida),
         '/configurarTiempo': (context) => ConfigurarTiempoScreen(),
