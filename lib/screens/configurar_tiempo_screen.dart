@@ -33,7 +33,6 @@ class _ConfigurarTiempoScreenState extends State<ConfigurarTiempoScreen> {
         _inicioTiempo = inicioGuardado != null ? DateTime.fromMillisecondsSinceEpoch(inicioGuardado) : DateTime.now();
 
         if (!_pausado) {
-          // ✅ Calculamos el tiempo restante basado en el tiempo transcurrido
           Duration tiempoTranscurrido = DateTime.now().difference(_inicioTiempo!);
           _tiempoRestante = Duration(seconds: tiempoGuardado) - tiempoTranscurrido;
 
@@ -128,7 +127,7 @@ class _ConfigurarTiempoScreenState extends State<ConfigurarTiempoScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel(); // ✅ Cancela el temporizador cuando se cierra la pantalla
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -190,7 +189,7 @@ class _ConfigurarTiempoScreenState extends State<ConfigurarTiempoScreen> {
 
                 ElevatedButton(
                   onPressed: _reiniciarCuenta,
-                  child: Text("Reiniciar a 24h"),
+                  child: Text("He acabado los retos"),
                 ),
               ],
             )

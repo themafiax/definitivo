@@ -29,7 +29,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   List<String> _areasDeVida = [];
   Map<String, List<String>> _retosSeleccionados = {};
-  Map<String, int> _nivelesAreas = {}; // ✅ Nuevo: Se agregan los niveles de áreas
+  Map<String, bool> _retosCumplidos = {}; // ✅ Se mantienen los retos cumplidos sin cambios
+  Map<String, int> _nivelesAreas = {}; // ✅ Se mantienen los niveles de áreas sin cambios
   int _vida = 500;
   bool _cargando = true;
   bool _primeraVez = true;
@@ -62,6 +63,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void actualizarRetosCumplidos(Map<String, bool> nuevosRetosCumplidos) {
+    setState(() {
+      _retosCumplidos = nuevosRetosCumplidos;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_cargando) {
@@ -80,6 +87,7 @@ class _MyAppState extends State<MyApp> {
           ? IntroduccionScreen()
           : MenuPrincipalScreen(
         retosSeleccionados: _retosSeleccionados,
+
         areasDeVida: _areasDeVida,
         nivelesAreas: _nivelesAreas, // ✅ Se pasa correctamente a la pantalla 7
       ),
@@ -88,7 +96,8 @@ class _MyAppState extends State<MyApp> {
         '/configurarAreas': (context) => ConfigurarAreasScreen(actualizarAreasYRetos: actualizarAreasYRetos),
         '/explicacionPavos': (context) => ExplicacionPavosScreen(),
         '/tienda': (context) => TiendaMalosHabitosScreen(areasDeVida: _areasDeVida),
-        '/configurarTiempo': (context) => ConfigurarTiempoScreen(),
+        '/configurarTiempo': (context) => ConfigurarTiempoScreen(
+        ),
         '/retoRevivir': (context) => RetoParaRevivirScreen(vida: _vida),
       },
     );

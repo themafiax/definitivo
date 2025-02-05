@@ -15,6 +15,7 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
   List<String> _areasSeleccionadas = [];
   Map<String, List<String>> _retosSeleccionados = {};
   Map<String, bool> _retosMarcados = {};
+  Map<String, TextEditingController> _controladoresRetos = {};
 
   final Map<String, List<String>> _retosPorArea = {
     "Salud Física 🏋️‍♂️": [
@@ -54,46 +55,6 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
     ],
   };
 
-  final Map<String, int> _xpPorReto = {
-    "Salud Física 🏋️‍♂️": 5,
-    "Desarrollo Personal 📖": 4,
-    "Finanzas 💰": 3,
-    "Relaciones 👨‍👩‍👧‍👦": 4,
-    "Trabajo y Productividad 💼": 5,
-    "Espiritualidad y Mindfulness 🧘‍♂️": 4,
-    "Ocio y Diversión 🎨": 3,
-  };
-
-  final Map<String, int> _vidaGanadaPorReto = {
-    "Salud Física 🏋️‍♂️": 10,
-    "Desarrollo Personal 📖": 8,
-    "Finanzas 💰": 5,
-    "Relaciones 👨‍👩‍👧‍👦": 8,
-    "Trabajo y Productividad 💼": 10,
-    "Espiritualidad y Mindfulness 🧘‍♂️": 8,
-    "Ocio y Diversión 🎨": 5,
-  };
-
-  final Map<String, int> _vidaPerdidaPorReto = {
-    "Salud Física 🏋️‍♂️": 15,
-    "Desarrollo Personal 📖": 12,
-    "Finanzas 💰": 10,
-    "Relaciones 👨‍👩‍👧‍👦": 12,
-    "Trabajo y Productividad 💼": 15,
-    "Espiritualidad y Mindfulness 🧘‍♂️": 10,
-    "Ocio y Diversión 🎨": 8,
-  };
-
-  final Map<String, int> _pavosPorReto = {
-    "Salud Física 🏋️‍♂️": 5,
-    "Desarrollo Personal 📖": 4,
-    "Finanzas 💰": 3,
-    "Relaciones 👨‍👩‍👧‍👦": 4,
-    "Trabajo y Productividad 💼": 5,
-    "Espiritualidad y Mindfulness 🧘‍♂️": 4,
-    "Ocio y Diversión 🎨": 3,
-  };
-
   @override
   void initState() {
     super.initState();
@@ -105,8 +66,14 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
     setState(() {
       _areasSeleccionadas = _retosPorArea.keys.toList();
       _retosSeleccionados = {};
+      _controladoresRetos = {};
+
       for (String area in _areasSeleccionadas) {
         _retosSeleccionados[area] = _retosPorArea[area] ?? [];
+        for (String reto in _retosSeleccionados[area]!) {
+          _controladoresRetos[reto] = TextEditingController(text: reto);
+          _retosMarcados[reto] = prefs.getBool('reto_marcado_$reto') ?? false;
+        }
       }
     });
   }
@@ -115,13 +82,22 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
     final prefs = await SharedPreferences.getInstance();
     prefs.setStringList('areasSeleccionadas', _areasSeleccionadas);
 
-    widget.actualizarAreasYRetos(_areasSeleccionadas, _retosSeleccionados, {});
+    _retosMarcados.forEach((reto, marcado) {
+      prefs.setBool('reto_marcado_$reto', marcado);
+    });
+
+    Map<String, List<String>> retosEnProgreso = {};
+    _retosSeleccionados.forEach((area, retos) {
+      retosEnProgreso[area] = retos.where((reto) => _retosMarcados[reto] == true).toList();
+    });
+
+    widget.actualizarAreasYRetos(_areasSeleccionadas, retosEnProgreso, {});
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MenuPrincipalScreen(
-          retosSeleccionados: _retosSeleccionados,
+          retosSeleccionados: retosEnProgreso,
           areasDeVida: _areasSeleccionadas,
           nivelesAreas: {},
         ),
@@ -147,18 +123,30 @@ class _ConfigurarAreasScreenState extends State<ConfigurarAreasScreen> {
                     child: ExpansionTile(
                       title: Text(area, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       children: _retosSeleccionados[area]!.map((reto) {
-                        return CheckboxListTile(
-                          title: Text(reto),
+                        return ListTile(
+                          leading: Checkbox(
+                            value: _retosMarcados[reto] ?? false,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _retosMarcados[reto] = value ?? false;
+                              });
+                            },
+                          ),
+                          title: TextField(
+                            controller: _controladoresRetos[reto],
+                            decoration: InputDecoration(border: InputBorder.none),
+                            onSubmitted: (nuevoReto) {
+                              setState(() {
+                                int idx = _retosSeleccionados[area]!.indexOf(reto);
+                                _retosSeleccionados[area]![idx] = nuevoReto;
+                                _controladoresRetos[nuevoReto] = TextEditingController(text: nuevoReto);
+                              });
+                            },
+                          ),
                           subtitle: Text(
-                            "+${_xpPorReto[area] ?? 0} XP, +${_vidaGanadaPorReto[area] ?? 0} Vida, -${_vidaPerdidaPorReto[area] ?? 0} Vida, +${_pavosPorReto[area] ?? 0} Pavos",
+                            "+5 XP, +10 Vida, -15 Vida, +5 Pavos",
                             style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
-                          value: _retosMarcados[reto] ?? false,
-                          onChanged: (bool? value) {
-                            setState(() {
-                              _retosMarcados[reto] = value ?? false;
-                            });
-                          },
                         );
                       }).toList(),
                     ),
